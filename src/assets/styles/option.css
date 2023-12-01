@@ -1,0 +1,16 @@
+fieldset {
+  width: fit-content;
+}
+
+fieldset + fieldset {
+  margin-top: 16px;
+}
+
+fieldset label {
+  display: inline-block;
+  width: 150px;
+}
+
+fieldset input {
+  width: 737px;
+}

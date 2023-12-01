@@ -1,0 +1,25 @@
+{
+  "name": "dev-master-ext",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "rollup --config --watch",
+    "build": "rollup --config"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@rollup/plugin-alias": "^5.1.0",
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "glob": "^10.3.10",
+    "rollup": "^4.6.0",
+    "rollup-plugin-clear": "^2.0.7",
+    "rollup-plugin-copy": "^3.5.0"
+  },
+  "dependencies": {
+    "chrome-types": "^0.1.246"
+  }
+}
