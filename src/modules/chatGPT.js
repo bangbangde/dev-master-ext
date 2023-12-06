@@ -1,16 +1,21 @@
+import { STORAGE_KEY } from "./consts";
 const apiUrl = 'https://api.openai.com/v1/chat/completions';
 let apiKey = '';
 
-chrome.storage.local.get('chatGPTSeecretApiKey').then(res => {
-  apiKey = res.chatGPTSeecretApiKey;
+chrome.storage.local.get(STORAGE_KEY.CHAT_GPT_SECRET_API_KEY).then(res => {
+  apiKey = res[STORAGE_KEY.CHAT_GPT_SECRET_API_KEY];
 });
 
 chrome.storage.local.onChanged.addListener(changes => {
-  if ('chatGPTSeecretApiKey' in changes) {
-    apiKey = changes.chatGPTSeecretApiKey.newValue;
+  if (STORAGE_KEY.CHAT_GPT_SECRET_API_KEY in changes) {
+    apiKey = changes[STORAGE_KEY.CHAT_GPT_SECRET_API_KEY].newValue;
   }
 });
 
+/**
+ * @param {string} prompt 
+ * @returns 
+ */
 export const chat = async (prompt) => {
   const data = {
     model: 'gpt-3.5-turbo',

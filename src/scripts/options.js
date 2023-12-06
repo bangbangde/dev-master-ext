@@ -1,30 +1,23 @@
-const refs = {};
+import { STORAGE_KEY } from "@/modules/consts";
+import { getRefs } from "@/utils/refs";
+
+let refs = {};
 const storage = chrome.storage.local;
 
-function initRefs() {
-  const refEls = document.querySelectorAll('.ref');
-  refEls.forEach(item => {
-    const refName = Array.from(item.classList).find(clazz => clazz.startsWith('ref-'))
-    const name = refName ? refName.substring(4) : null;
-    if (name) {
-      refs[name] = item;
-    }
-  })
-}
-
 window.addEventListener('load', () => {
-  initRefs();
+  refs = getRefs();
 
   storage.get().then(res => {
-    refs.inputPAT.value = res.githubPersonalAccessToken || '';
-    refs.inputSAK.value = res.chatGPTSeecretApiKey || '';
+    refs.inputPAT.value = res[STORAGE_KEY.GITHUB_PERSONAL_ACCESS_TOKEN] || '';
+    refs.inputSAK.value = res[STORAGE_KEY.CHAT_GPT_SECRET_API_KEY] || '';
+    refs.inputToken.value = res[STORAGE_KEY.CHAT_GPT_WEB_TOKEN] || '';
   });
 
   refs.btnSavePAT.addEventListener('click', () => {
     if (window.confirm('确认更新？')) {
       const value = refs.inputPAT.value;
       storage.set({
-        githubPersonalAccessToken: value
+        [STORAGE_KEY.GITHUB_PERSONAL_ACCESS_TOKEN]: value
       })
     }
   });
@@ -32,7 +25,15 @@ window.addEventListener('load', () => {
     if (window.confirm('确认更新？')) {
       const value = refs.inputSAK.value;
       storage.set({
-        chatGPTSeecretApiKey: value
+        [STORAGE_KEY.CHAT_GPT_SECRET_API_KEY]: value
+      })
+    }
+  });
+  refs.btnSaveToken.addEventListener('click', () => {
+    if (window.confirm('确认更新？')) {
+      const value = refs.inputToken.value;
+      storage.set({
+        [STORAGE_KEY.CHAT_GPT_WEB_TOKEN]: value
       })
     }
   })

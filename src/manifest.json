@@ -38,11 +38,15 @@
     "client_id": "6996a66e24894da0b73f",
     "scopes":[""]
   },
+  "host_permissions": [
+    "*://*.openai.com/"
+  ],
   "permissions": [
     "contextMenus",
     "storage",
     "scripting",
     "activeTab",
-    "identity"
+    "identity",
+    "cookies"
   ]
 }

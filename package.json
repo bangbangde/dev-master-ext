@@ -20,6 +20,7 @@
     "rollup-plugin-copy": "^3.5.0"
   },
   "dependencies": {
-    "chrome-types": "^0.1.246"
+    "chrome-types": "^0.1.246",
+    "deepmerge": "^4.3.1"
   }
 }

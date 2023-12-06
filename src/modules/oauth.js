@@ -1,8 +1,5 @@
-const storage = chrome.storage.local;
-
 const clientId = "";
 const clientSecret = "";
-const listenerSet = new Set();
 
 async function requestAccessToken(code, redirectUri) {
   const tokenEndpoint = 'https://github.com/login/oauth/access_token';
@@ -25,7 +22,6 @@ async function requestAccessToken(code, redirectUri) {
   .then(response => response.json())
   .then(data => {
     const token = data['access_token'];
-    Token.set(token);
     return token;
   });
 }
@@ -54,32 +50,4 @@ export const launchWebAuthFlow = async () => {
 
     return requestAccessToken(code, redirectUri);
   })
-}
-
-storage.onChanged.addListener((changes, areaName) => {
-  if (areaName === 'local' && 'token' in changes) {
-    listenerSet.forEach(fn => {
-      try {
-        fn(changes.token.newValue);
-      } catch (e) {}
-    });
-  }
-});
-
-export const Token = {
-  request: async () => {
-    return launchWebAuthFlow();
-  },
-  get: async () => {
-    return (await storage.get('token')).token;
-  },
-  set: async (token) => {
-    return storage.set({token});
-  },
-  addListener(fn) {
-    listenerSet.add(fn);
-  },
-  removeListener(fn) {
-    listenerSet.delete(fn);
-  }
 }
