@@ -129,6 +129,7 @@ export const renameConversation = (id, title) => {
 }
 
 export class ChatBot {
+  ready = false;
   bot = null;
   conversationId = null;
   currentNode = null;
@@ -142,19 +143,22 @@ export class ChatBot {
     if (!this.currentNode || !this.messageMapping) return null;
 
     const list = [];
+    const mapping = this.messageMapping;
+
     (function unshiftMsg(id) {
-      const target = this.messageMapping[id];
+      const target = mapping[id];
       list.unshift(target);
       if (target.parent) {
         unshiftMsg(target.parent)
       }
     })(this.currentNode);
+    
     return list;
   }
 
   async initConversation() {
     const conversations = await queryConversations().then(res => res.json());
-    const foundConv = conversations.items.find(v => v.title === bot.title);
+    const foundConv = conversations.items.find(v => v.title === this.bot.title);
 
     if (foundConv) {
       this.conversationId = foundConv.id;
@@ -164,9 +168,10 @@ export class ChatBot {
       await renameConversation(this.conversationId, this.bot.title);
     }
 
-    const convDetail = queryConversation(this.conversationId);
+    const convDetail = await queryConversation(this.conversationId).then(res => res.json());
     this.currentNode = convDetail['current_node'];
     this.messageMapping = convDetail['mapping'];
+    this.ready = true;
   }
   
   async chat(msg, onMessage) {
