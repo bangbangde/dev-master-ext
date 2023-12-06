@@ -116,10 +116,10 @@ export const postMessage = async (message, cb, conversationId, parentMessageId) 
     }
     await reader.read().then(processText);
 
-    console.log('conveersation done', {data});
+    console.log('conveersation done', {message, data});
     return {
       data,
-      message: 
+      message
     };
   })
 }
