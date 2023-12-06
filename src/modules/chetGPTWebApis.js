@@ -169,7 +169,7 @@ export class ChatBot {
       this.conversationId = foundConv.id;
     } else {
       const res = await postMessage(this.bot.initialPrompt);
-      this.conversationId = res[res.length - 1].conversation_id;
+      this.conversationId = res.data[res.data.length - 1].conversation_id;
       await renameConversation(this.conversationId, this.bot.title);
     }
 
