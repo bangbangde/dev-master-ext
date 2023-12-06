@@ -89,7 +89,8 @@ export const postMessage = async (message, cb, conversationId, parentMessageId) 
     })
   }).then(async response => {
     const reader = response.body.getReader();
-    let result = [];
+    let data = [];
+    let message = "";
 
     async function processText(res) {
       if (res.done) return;
@@ -103,8 +104,9 @@ export const postMessage = async (message, cb, conversationId, parentMessageId) 
         try {
           if (str === '[DONE]') return;
           const obj = JSON.parse(str);
-          result.push(obj);
-          cb && cb(obj);
+          message = obj.message.content.parts.join('');
+          data.push(obj);
+          cb && cb(message, obj);
         } catch(e) {
           // console.error('processText', e);
         }
@@ -114,8 +116,11 @@ export const postMessage = async (message, cb, conversationId, parentMessageId) 
     }
     await reader.read().then(processText);
 
-    console.log('conveersation done', {result});
-    return result;
+    console.log('conveersation done', {data});
+    return {
+      data,
+      message: 
+    };
   })
 }
 
@@ -175,11 +180,8 @@ export class ChatBot {
   }
   
   async chat(msg, onMessage) {
-    return postMessage(msg, (data) => {
-      const msg = data.message.content.parts.join('');
-      onMessage && onMessage(msg, data);
-    }, this.conversationId, this.currentNode).then(res => {
-      this.currentNode = res[res.length - 1]['message_id'];
+    return postMessage(msg, onMessage, this.conversationId, this.currentNode).then((res) => {
+      this.currentNode = res.data[res.data.length - 1]['message_id'];
       return res;
     })
   }
