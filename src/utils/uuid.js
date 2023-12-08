@@ -3,7 +3,12 @@ export function generateUUID() {
     return str.padStart(4, '0');
   }
   
-  let cryptoObj = window.crypto || window['msCrypto']; // for IE 11
+  let cryptoObj;
+  if (typeof window === 'undefined') {
+    cryptoObj = globalThis.crypto;
+  } else {
+    cryptoObj = window.crypto || window['msCrypto']; // for IE 11
+  }
   if (cryptoObj) {
     let array = new Uint16Array(8);
     cryptoObj.getRandomValues(array);

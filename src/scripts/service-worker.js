@@ -1,5 +1,7 @@
 import "../modules/action.js";
+import "../modules/contextMenus.js";
+
 
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('onInstalled');
+  chrome.action.setBadgeText({text: 'inst'});
 });

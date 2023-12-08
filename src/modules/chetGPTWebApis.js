@@ -181,7 +181,8 @@ export class ChatBot {
   
   async chat(msg, onMessage) {
     return postMessage(msg, onMessage, this.conversationId, this.currentNode).then((res) => {
-      this.currentNode = res.data[res.data.length - 1]['message_id'];
+      const lastNode = res.data[res.data.length - 1];
+      this.currentNode = lastNode['message_id'] || lastNode.message.id;
       return res;
     })
   }

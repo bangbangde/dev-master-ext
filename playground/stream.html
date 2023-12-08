@@ -6,12 +6,40 @@
   <title>Document</title>
 </head>
 <body>
-  <script>
+  <code style="white-space: pre-wrap;">
     // '228,189,160 229,165,189 104 101 108 108 111 239,188,129'
     const string = "你好hello！";
     const view = new TextEncoder().encode(string);
     const decoder = new TextDecoder('utf8');
+  </code>
+  <input type="text" value="12345">
+  <br>
+  <textarea>&#97;&#13;&#10;&#98;</textarea>
+  <textarea>&#97;&#13;&#98;</textarea>
+  <textarea>&#97;&#10;&#98;</textarea>
+  <textarea>a&NewLine;b</textarea>
+  <style>
+    .fa-icon {
+      position: fixed;
+      width: 20px;
+      height: 20px;
+      border-radius: 8px;
+      background-color: chocolate;
+      left: -100vw;
+    }
+  </style>
+  <script>
+    // document.querySelectorAll('textarea').forEach(el => {
+    //   Array.from(el.value).forEach(v => {
+    //     console.log(`【${JSON.stringify(v)}】(${v.codePointAt(0)})`);
+    //   })
+    // });
 
+    // let i = 0;
+    // setInterval(() => {
+    //   window.postMessage('hi.' + i++, '*');
+    // }, 5000);
   </script>
+  <script type="module" src="../src/modules/selectionFAB.js"></script>
 </body>
 </html>
