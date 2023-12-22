@@ -1,67 +1,70 @@
 import { init } from "@/modules/selectionFAB";
 import { KEYS, sendMessage } from "@/modules/message";
-const looger = console.log.bind(null, '[content script]');
+import {addMoveController, createResizableContainer} from '../utils/resizeAndMove';
+const logger = console.log.bind(null, '[content script]');
 
-const template = document.createDocumentFragment();
+logger('v0.0.6');
 
+function createDialog(x = 0, y = 0) {
+  const dialog = createResizableContainer('dialog resizable', {
+    left: x + 'px',
+    top: y + 'px'
+  });
 
-looger('v0.0.6');
+  const container = document.createElement('div');
+  const shadowRoot = container.attachShadow({mode: 'open'});
+  shadowRoot.innerHTML =
+    `
+        <style>
+        :host {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+        }
+        .head {
+            height: 16px;
+            background: gainsboro;
+        }
+        .body {
+            flex: 1 1 auto;
+            padding: 16px;
+        }
+        </style>
+        <div class="head"></div>
+        <div class="body"></div>
+      `;
+
+  const head = shadowRoot.querySelector('.head');
+  const body = shadowRoot.querySelector('.body');
+
+  addMoveController(head, dialog, 'transform');
+  dialog.append(container);
+  dialog.setAttribute('tabindex', -1);
+  dialog.addEventListener('blur', (ev) => ev.target.remove())
+
+  document.documentElement.append(dialog);
+
+  return {
+    target: dialog,
+    setContent: content => body.innerHTML = content,
+    close: () => dialog.remove()
+  };
+}
 
 function FABClickListener(text, ev) {
   const btn = ev.target;
-  const {offsetLeft, offsetTop} = btn;
-
-  function createDialog(content) {
-    const dialog = document.createElement('div');
-    const shadowRoot = dialog.attachShadow({mode: 'closed'});
-    shadowRoot.innerHTML =
-    /**html*/`
-      <style>
-        :host {
-          position: fixed;
-          left: 0;
-          top: 0;
-          right: 0;
-          bottom: 0;
-        }
-        .content {
-          padding: 16px;
-          background: white;
-          border-radius: 8px;
-          max-width: 300px;
-          max-height: 500px;
-          position: absolute;
-          overflow: auto;
-          left: ${offsetLeft}px;
-          top: ${offsetTop}px;
-        }
-      </style>
-      <p class="content loading">loading...</p>
-    `;
-
-    dialog.addEventListener('click', ev => {
-      if (ev.target === ev.currentTarget) {
-        dialog.remove();
-        return;
-      }
-    })
-    document.documentElement.append(dialog);
-
-    return {
-      setContent(content) {
-        const innerDialog = shadowRoot.querySelector('p.content');
-        innerDialog.classList.remove('loading');
-        innerDialog.innerHTML = content;
-      }
-    }
-  }
-
+  const dialog = createDialog(btn.offsetLeft, btn.offsetTop);
   btn.remove();
-  const dialog = createDialog();
+  
   sendMessage(KEYS.CHAT_GPT_TRANSFORM, `请将这段文字翻译成中文：“${text}”`)
     .then(res => {
       console.log(res);
-      dialog.setContent(res.data.message);
+      if (res.code == 0) {
+        dialog.setContent(res.data.message);
+      } else {
+        dialog.setContent(res.msg);
+      }
     })
     .catch(err => {
       console.error(err);

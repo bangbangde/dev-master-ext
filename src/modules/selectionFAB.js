@@ -2,10 +2,17 @@ const btnClass = 'fa-icon';
 const initFlag = 'SELECTION_FAB_INSTALLED';
 
 let _fabClickListener = () => {};
+let btn;
 
 export function createButton({left, top, text}) {
-  /** @type {HTMLDivElement} */
-  const btn = document.createElement('div');
+  if (btn) {
+    btn.style.left = left;
+    btn.style.top = top;
+    btn.onclick = _fabClickListener.bind(null, text);
+    document.documentElement.append(btn);
+    return;
+  }
+  btn = document.createElement('div');
   btn.style.left = left;
   btn.style.top = top;
   const shadowRoot = btn.attachShadow({mode: 'closed'});
@@ -19,6 +26,7 @@ export function createButton({left, top, text}) {
       border-radius: 8px;
       background-color: orange;
       text-align: center;
+      cursor: pointer;
     }
     .content {
       color: white;
@@ -64,7 +72,6 @@ export function init (fabClickListener) {
   };
 
   const handleMousedown = (ev) => {
-    const btn = document.querySelector(`.${btnClass}`);
     if (btn && btn !== ev.target) {
       btn.remove();
     }
