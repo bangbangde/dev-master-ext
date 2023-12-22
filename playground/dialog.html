@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <button onclick="openDialog()">open dialog</button>
+
+  <script>
+    function createDialog(left = 0, top = 0) {
+      const dialog = document.createElement('div');
+      const shadowRoot = dialog.attachShadow({mode: 'open'});
+      shadowRoot.innerHTML =
+      /**html*/`
+        <style>
+          :host {
+            position: fixed;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+          }
+          .content {
+            border: 1px solid blue;
+            padding: 16px;
+            background: white;
+            border-radius: 8px;
+            max-width: 300px;
+            max-height: 500px;
+            position: absolute;
+            overflow: auto;
+            left: ${left}px;
+            top: ${top}px;
+          }
+          .foot {
+            height: 8px;
+            background-color: gray;
+          }
+        </style>
+        <p class="content loading">loading...</p>
+        <div class="foot"></div>
+      `;
+
+      dialog.addEventListener('click', ev => {
+        console.log(ev.target, ev.currentTarget);
+        if (ev.target === ev.currentTarget) {
+          // dialog.remove();
+          return;
+        }
+      })
+      
+      document.documentElement.append(dialog);
+
+      return {
+        setContent(content) {
+          const innerDialog = shadowRoot.querySelector('p.content');
+          innerDialog.classList.remove('loading');
+          innerDialog.innerHTML = content;
+        }
+      }
+    }
+    
+    function openDialog() {
+      const dialog = createDialog();
+      dialog.setContent('hello world');
+    }
+  </script>
+</body>
+</html>

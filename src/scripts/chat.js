@@ -1,11 +1,11 @@
-import { getRefs } from "@/utils/refs";
+import { useRefs } from "@/utils/refs";
 import { ChatBot } from "@/modules/chetGPTWebApis";
 
 const bot = new ChatBot();
 const initPromise = bot.initConversation();
 
 window.addEventListener('load', async () => {
-  const refs = window['refs'] = getRefs();
+  const refs = window['refs'] = useRefs();
 
   function resizeInput () {
     const el = refs.chatInput;

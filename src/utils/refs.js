@@ -1,4 +1,4 @@
-export function getRefs(name = 'ref', prefix = 'ref-') {
+export function useRefs(name = 'ref', prefix = 'ref-') {
   const refs = {};
   const refEls = document.querySelectorAll(`.${name}`);
   refEls.forEach(item => {

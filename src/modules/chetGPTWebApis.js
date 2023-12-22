@@ -133,15 +133,20 @@ export const renameConversation = (id, title) => {
   })
 }
 
+export const getReady = async (bot) => {
+
+}
+
 export class ChatBot {
-  ready = false;
   bot = null;
   conversationId = null;
   currentNode = null;
   messageMapping = null;
+  ready = new Promise(() => {});
 
   constructor(bot) {
     this.bot = bot || ChatBot.botRegistry.COMMON;
+    this.ready = this.update();
   }
 
   get messageList() {
@@ -161,7 +166,7 @@ export class ChatBot {
     return list;
   }
 
-  async initConversation() {
+  async update() {
     const conversations = await queryConversations().then(res => res.json());
     const foundConv = conversations.items.find(v => v.title === this.bot.title);
 
@@ -176,15 +181,17 @@ export class ChatBot {
     const convDetail = await queryConversation(this.conversationId).then(res => res.json());
     this.currentNode = convDetail['current_node'];
     this.messageMapping = convDetail['mapping'];
-    this.ready = true;
   }
   
   async chat(msg, onMessage) {
-    return postMessage(msg, onMessage, this.conversationId, this.currentNode).then((res) => {
-      const lastNode = res.data[res.data.length - 1];
-      this.currentNode = lastNode['message_id'] || lastNode.message.id;
-      return res;
-    })
+    return this.ready
+      .catch(() => {})
+      .then(() => postMessage(msg, onMessage, this.conversationId, this.currentNode))
+      .then((res) => {
+        const lastNode = res.data[res.data.length - 1];
+        this.currentNode = lastNode['message_id'] || lastNode.message.id;
+        return res;
+      })
   }
 }
 

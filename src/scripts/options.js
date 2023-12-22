@@ -1,11 +1,11 @@
 import { STORAGE_KEY } from "@/modules/consts";
-import { getRefs } from "@/utils/refs";
+import { useRefs } from "@/utils/refs";
 
 let refs = {};
 const storage = chrome.storage.local;
 
 window.addEventListener('load', () => {
-  refs = getRefs();
+  refs = useRefs();
 
   storage.get().then(res => {
     refs.inputPAT.value = res[STORAGE_KEY.GITHUB_PERSONAL_ACCESS_TOKEN] || '';
