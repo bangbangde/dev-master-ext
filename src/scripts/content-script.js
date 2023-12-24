@@ -1,74 +1,33 @@
-import { init } from "@/modules/selectionFAB";
+import * as FAB from "@/modules/selectionFAB";
 import { KEYS, sendMessage } from "@/modules/message";
-import {addMoveController, createResizableContainer} from '../utils/resizeAndMove';
+import {addMoveController} from "@/utils/moveElement";
 const logger = console.log.bind(null, '[content script]');
 
-logger('v0.0.6');
-
-function createDialog(x = 0, y = 0) {
-  const dialog = createResizableContainer('dialog resizable', {
-    left: x + 'px',
-    top: y + 'px'
-  });
-
-  const container = document.createElement('div');
-  const shadowRoot = container.attachShadow({mode: 'open'});
-  shadowRoot.innerHTML =
-    `
-        <style>
-        :host {
-          width: 100%;
-          height: 100%;
-          display: flex;
-          flex-direction: column;
-        }
-        .head {
-            height: 16px;
-            background: gainsboro;
-        }
-        .body {
-            flex: 1 1 auto;
-            padding: 16px;
-        }
-        </style>
-        <div class="head"></div>
-        <div class="body"></div>
-      `;
-
-  const head = shadowRoot.querySelector('.head');
-  const body = shadowRoot.querySelector('.body');
-
-  addMoveController(head, dialog, 'transform');
-  dialog.append(container);
-  dialog.setAttribute('tabindex', -1);
-  dialog.addEventListener('blur', (ev) => ev.target.remove())
-
-  document.documentElement.append(dialog);
-
-  return {
-    target: dialog,
-    setContent: content => body.innerHTML = content,
-    close: () => dialog.remove()
-  };
+function defineCustomElements() {
+  const script = document.createElement("script");
+  script.type = "module";
+  script.src = chrome.runtime.getURL("scripts/Resizable.js");
+  document.body.appendChild(script);
 }
 
-function FABClickListener(text, ev) {
+logger('v0.0.6');
+defineCustomElements();
+
+FAB.init((text, ev) => {
   const btn = ev.target;
-  const dialog = createDialog(btn.offsetLeft, btn.offsetTop);
+  const dialog = document.createElement('c-resizable');
+  dialog.style.left = btn.offsetLeft + 'px';
+  dialog.style.top = btn.offsetTop + 'px';
+  document.body.append(dialog);
+  dialog.innerHTML = 'loading...'
   btn.remove();
-  
+
   sendMessage(KEYS.CHAT_GPT_TRANSFORM, `请将这段文字翻译成中文：“${text}”`)
     .then(res => {
-      console.log(res);
-      if (res.code == 0) {
-        dialog.setContent(res.data.message);
-      } else {
-        dialog.setContent(res.msg);
-      }
+      if (res.code !== 0) throw new Error(res.msg);
+      dialog.innerHTML = res.data.message;
     })
     .catch(err => {
-      console.error(err);
+      dialog.innerHTML = err.message || '未知错误';
     });
-}
-
-init(FABClickListener);
+});

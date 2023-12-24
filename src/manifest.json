@@ -53,5 +53,11 @@
     "identity",
     "cookies",
     "tabs"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [ "scripts/Resizable.js" ],
+      "matches": [ "<all_urls>" ]
+    }
   ]
 }

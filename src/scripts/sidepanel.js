@@ -16,6 +16,4 @@ const removeMessageListener = listenForMessage((msg, sender, sendResponse) => {
   if (refs?.selectionText) {
     refs.selectionText.innerText = msg.data;
   }
-  sendResponse(0);
-  return false;
 });
