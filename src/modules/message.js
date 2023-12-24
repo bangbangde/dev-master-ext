@@ -5,7 +5,7 @@ export const KEYS = {
 
 /**
  * 
- * @param {KEYS[keyof KEYS]} key 
+ * @param {string} key 
  * @param {*} data 
  * @returns 
  */

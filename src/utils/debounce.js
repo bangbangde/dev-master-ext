@@ -7,10 +7,10 @@ export function debounce(fn, wait = 800, immediate = false) {
     fn.apply(lastThis, lastArgs);
   }
 
-  function startTimer() {
+  function startTimer(executed) {
     timer = setTimeout(() => {
       timer = null;
-      if (!immediate) {
+      if (!executed) {
         invokeFn();
       }
     }, wait);
@@ -22,14 +22,15 @@ export function debounce(fn, wait = 800, immediate = false) {
 
     if (timer) {
       clearTimeout(timer);
-      startTimer();
+      startTimer(false);
       return;
     }
 
     if (immediate) {
       invokeFn();
+      startTimer(true);
+    } else {
+      startTimer(false);
     }
-
-    startTimer();
   }
 }

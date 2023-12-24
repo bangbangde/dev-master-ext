@@ -3,13 +3,80 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>sidepanel</title>
-  <script type="module" src="../scripts/sidepanel.js"></script>
+  <title>side panel</title>
+  <style>
+    .ref-inputWrap {
+      position: relative;
+      border: 1px solid rgba(217,217,227,.8);
+    }
+    textarea {
+      width: 100%;
+      resize: none;
+      font-size: 12px;
+      line-height: 24px;
+      padding: 10px 48px 10px 12px;
+      max-height: 100px;
+      box-sizing: border-box;
+      border: none;
+    }
+    textarea:focus-visible { outline: none; }
+    
+    .ref-btnPost {
+      position: absolute;
+      right: 8px;
+      top: 6px;
+      font-size: 24px;
+      line-height: 32px;
+      text-align: center;
+      background: gainsboro;
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .ref-btnPost:active {
+      opacity: .8;
+    }
+    .tabs {
+      display: flex;
+      flex-flow: row wrap;
+    }
+    .tab {
+      padding: 4px 8px;
+      border-radius: 4px;
+      margin: 1px;
+      color: #333333;
+      cursor: pointer;
+    }
+    .tab.active {
+      color: white;
+      background: rgba(104, 190, 255, 1);
+    }
+    .ref-templateContent {
+      border: 1px solid gainsboro;
+      padding: 10px 16px;
+    }
+    
+    .hidden {
+      display: none;
+    }
+  </style>
+  <script type="module" src="../scripts/side-panel.js"></script>
 </head>
 <body>
-  <!-- <button class="ref ref-openInTab">在单独tab中打开</button>
-  sidepanel -->
-  <p class="ref ref-status"></p>
-  <p class="ref ref-selectionText"></p>
+  <div class="templates">
+    <div class="tabs">
+      <div class="tab active" data-key="chat">Chat</div>
+      <div class="tab" data-key="translate">翻译</div>
+    </div>
+    
+    <div class="ref ref-inputWrap">
+      <textarea class="ref ref-inputMsg" placeholder="Message ChatGPT..." rows="1"></textarea>
+      <button class="ref ref-btnPost">☃</button>
+    </div>
+    
+    <div class="ref ref-templateContent hidden">将“${message}”翻译成中文，注意，直接输出翻译结果即可。</div>
+  </div>
 </body>
 </html>
