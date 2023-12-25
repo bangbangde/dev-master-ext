@@ -7,15 +7,15 @@ export const useStorage = async (key, options = {}) => {
   const {
     area = 'local',
     initValue,
-    forceUpdate = false,
     watch = false
   } = options;
 
   const storage = chrome.storage[area];
-  let value = initValue
+  let value;
   
-  if (forceUpdate) {
+  if (initValue !== undefined) {
     await storage.set({[key]: value});
+    value = initValue;
   } else {
     value = (await storage.get(key))[key];
   }

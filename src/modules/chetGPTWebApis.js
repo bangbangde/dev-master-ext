@@ -1,9 +1,17 @@
+// @ts-nocheck
 import merge from 'deepmerge';
 import { useStorage } from "@/utils/useStorage";
 import { STORAGE_KEY } from './consts';
 import { generateUUID } from '@/utils/uuid';
 
-let token = useStorage(STORAGE_KEY.CHAT_GPT_WEB_TOKEN, { watch: true });
+const instances = new Set();
+
+let token = useStorage(STORAGE_KEY.CHAT_GPT_WEB_TOKEN, { 
+  onChange() {
+    instances.forEach(item => item.update());
+  }
+ });
+let chatBotStatus = useStorage(STORAGE_KEY.CHAT_BOT_STATUS);
 
 /**
  * @param {string} urlString 
@@ -26,7 +34,13 @@ const request = async (urlString, options) => {
       Authorization,
       'Content-Type': 'application/json'
     }
-  }, options));
+  }, options))
+    .then(response => {
+      if (response.ok) {
+        return response;
+      }
+      return response.json().then(data => {throw new Error(data.detail)});
+    });
 }
 
 export const queryConversations = () => {
@@ -133,20 +147,25 @@ export const renameConversation = (id, title) => {
   })
 }
 
-export const getReady = async (bot) => {
-
-}
-
 export class ChatBot {
+  static botRegistry = {
+    COMMON: {
+      title: 'BOT_通用助手',
+      initialPrompt: '请你扮演一个web开发助手'
+    }
+  };
+
   bot = null;
   conversationId = null;
   currentNode = null;
   messageMapping = null;
-  ready = new Promise(() => {});
+  ready;
+  responding = false;
+  pendingChatList = [];
 
   constructor(bot) {
     this.bot = bot || ChatBot.botRegistry.COMMON;
-    this.ready = this.update();
+    this.update();
   }
 
   get messageList() {
@@ -167,6 +186,19 @@ export class ChatBot {
   }
 
   async update() {
+    this.ready = this.initConversation();
+    this.ready.then(() => {
+      chatBotStatus.then(v => {
+        v.set({ready: true});
+      })
+    }).catch(err => {
+      chatBotStatus.then(v => {
+        v.set({ready: false, detail: err.message });
+      })
+    })
+  }
+
+  async initConversation() {
     const conversations = await queryConversations().then(res => res.json());
     const foundConv = conversations.items.find(v => v.title === this.bot.title);
 
@@ -181,23 +213,50 @@ export class ChatBot {
     const convDetail = await queryConversation(this.conversationId).then(res => res.json());
     this.currentNode = convDetail['current_node'];
     this.messageMapping = convDetail['mapping'];
+    return this;
   }
   
+  /**
+   * 发送消息
+   * - 按调用顺序依次发送
+   * @param {*} msg 
+   * @param {*} onMessage 
+   * @returns 
+   */
   async chat(msg, onMessage) {
-    return this.ready
-      .catch(() => {})
-      .then(() => postMessage(msg, onMessage, this.conversationId, this.currentNode))
-      .then((res) => {
-        const lastNode = res.data[res.data.length - 1];
-        this.currentNode = lastNode['message_id'] || lastNode.message.id;
-        return res;
-      })
-  }
-}
+    await this.ready;
 
-ChatBot.botRegistry = {
-  COMMON: {
-    title: 'BOT_通用助手',
-    initialPrompt: '请你扮演一个web开发助手'
+    const post = (reject, resolve) => {
+      return postMessage(msg, onMessage, this.conversationId, this.currentNode)
+        .then((res) => {
+          const lastNode = res.data[res.data.length - 1];
+          this.currentNode = lastNode['message_id'] || lastNode.message.id;
+          resolve && resolve(res);
+          return res;
+        })
+        .catch(err => {
+          if (reject) {
+            reject(err);
+          } else {
+            throw err;
+          }
+        })
+        .finally(() => {
+          if (this.pendingChatList?.length) {
+            this.pendingChatList.shift()();
+          } else {
+            this.responding = false;
+          }
+        });
+    }
+
+    if (this.responding) {
+      return new Promise((resolve, reject) => {
+        this.pendingChatList.push(post.bind(this, resolve, reject));
+      });
+    }
+    
+    this.responding = true;
+    return post();
   }
 }

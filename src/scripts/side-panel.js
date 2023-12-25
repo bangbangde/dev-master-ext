@@ -1,14 +1,72 @@
-import { listenForMessage } from "../modules/message.js";
+import { MESSAGE_TYPE } from "@/modules/consts.js";
 import { useRefs } from "../utils/refs.js";
 
 let refs;
 
+let conversationId;
+
+const templates = {
+  translate: {
+    fields: [
+      {
+        label: '翻译',
+        name: '',
+        type: 'select',
+        initialValue: null,
+        options: [ { label: '', value: '' } ]
+      }
+    ],
+    
+  }
+}
+
+// @ts-ignore
+const port = chrome.runtime.connect({ name: "sidepanel" });
+port.onMessage.addListener(function(message) {
+    console.log(`Side panel received message from ${port.name}: ${JSON.stringify(message)}`);
+
+    if (message.type === MESSAGE_TYPE.CHAT_GPT_CID) {
+      conversationId = message.data;
+      setLinkTochatGPT();
+      return;
+    }
+
+    if (message.type === MESSAGE_TYPE.CHAT_GPT_RESPONDING) {
+      refs.response.innerHTML = message.data;
+      return;
+    }
+    if (message.type === MESSAGE_TYPE.CHAT_GPT_RESPONSE) {
+      refs.response.classList.remove('responding');
+      if (message.error) {
+        refs.response.classList.add('error');
+        refs.response.innerHTML = message.error;
+      }
+      return;
+    }
+});
+
 function messageChatGPT() {
+  if (refs.response.classList.contains('responding')) return;
+
   const {inputMsg} = refs;
   const message = inputMsg.value;
+  if (message.trim() === '') return;
+
   inputMsg.value = "";
   inputMsg.dispatchEvent(new InputEvent('input'));
-  console.log(message);
+
+  port.postMessage({ type: MESSAGE_TYPE.CHAT_GPT_POST_MSG, data: message });
+  refs.response.inneerHTML = '';
+  refs.response.classList.add('responding');
+  refs.response.classList.remove('error');
+}
+
+function setLinkTochatGPT() {
+  if (!conversationId) return;
+  let el = document.querySelector('[ref=linkTochatGPT]');
+  if (!el) return;
+
+  el.setAttribute('href', `https://chat.openai.com/c/${conversationId}`);
 }
 
 window.addEventListener('load', () => {
@@ -59,5 +117,7 @@ window.addEventListener('load', () => {
         templateContent.classList.remove('hidden');
       }
     })
-  })
+  });
+
+  setLinkTochatGPT();
 });

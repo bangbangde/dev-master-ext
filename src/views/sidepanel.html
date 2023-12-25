@@ -61,6 +61,37 @@
     .hidden {
       display: none;
     }
+
+    .ref-response {
+      margin: 16px 0;
+      padding: 10px 12px;
+      border: 1px solid gainsboro;
+    }
+    .ref-response.error {
+      color: #FF000099;
+    }
+    .ref-response.responding::after {
+      content: '';
+      display: inline-block;
+      width: 1px;
+      height: 1em;
+      background-color: #333333;
+      animation: blink 400ms linear 0ms infinite both alternate;
+    }
+    @keyframes blink {
+      0% {
+        opacity: 1;
+      }
+      49.9% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0;
+      }
+      100% {
+        opacity: 0;
+      }
+    }
   </style>
   <script type="module" src="../scripts/side-panel.js"></script>
 </head>
@@ -78,5 +109,7 @@
     
     <div class="ref ref-templateContent hidden">将“${message}”翻译成中文，注意，直接输出翻译结果即可。</div>
   </div>
+  <div class="ref ref-response"></div>
+  <a ref="linkTochatGPT" href="javascript:void(0);" target="_blank">前往当前会话</a>
 </body>
 </html>
