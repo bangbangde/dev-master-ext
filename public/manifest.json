@@ -10,7 +10,7 @@
     "128": "images/icon-128.png"
   },
   "background": {
-    "service_worker": "main/service-worker.js",
+    "service_worker": "assets/service-worker.js",
     "type": "module"
   },
   "options_ui": {
@@ -19,7 +19,7 @@
   },
   "content_scripts": [
     {
-      "js": ["main/content-script.js"],
+      "js": ["assets/content-script.js"],
       "matches": [
         "http://*/*",
         "https://*/*"
@@ -35,7 +35,7 @@
     "default_popup": "pages/popup.html"
   },
   "side_panel": {
-    "default_path": "pages/sidepanel.html"
+    "default_path": "pages/side-panel.html"
   },
   "host_permissions": [
     "<all_urls>"
