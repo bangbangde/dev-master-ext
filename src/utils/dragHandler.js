@@ -1,4 +1,4 @@
-export function addMoveController(anchor, target, mode = 'position') {
+export function enableDrag(anchor, target, mode = 'position') {
 
   function handleMouseDown(ev) {
     const diffX = ev.offsetX;

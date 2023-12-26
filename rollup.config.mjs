@@ -8,7 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url'
 import {glob} from 'glob';
 
-const entries = glob.sync('src/scripts/**/*.js');
+const entries = glob.sync('src/main/**/*.js');
 
 export default entries.map(file => {
 		const inputFileName = path.relative(
@@ -40,8 +40,8 @@ export default entries.map(file => {
         copy({
           targets: [
             { src: 'src/manifest.json', dest: 'dist' },
-            { src: 'src/assets/*', dest: 'dist/assets' },
-            { src: 'src/views/*', dest: 'dist/views' },
+            { src: 'src/images/*', dest: 'dist/images' },
+            { src: 'src/pages/*', dest: 'dist/pages' },
           ]
         })
 			]
