@@ -1,5 +1,13 @@
-export function enableDrag(anchor, target, mode = 'position') {
+export function enableDrag(anchor, options = {}) {
+  const {
+    target = anchor,
+    mode = 'position',
+    // allowOutScreen = false
+  } = options
 
+  /**
+   * @param {MouseEvent} ev
+   */
   function handleMouseDown(ev) {
     const diffX = ev.offsetX;
     const diffY = ev.offsetY;

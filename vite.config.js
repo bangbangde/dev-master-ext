@@ -1,5 +1,5 @@
+// @ts-nocheck
 import { fileURLToPath, URL } from 'node:url';
-import { resolve } from 'path';
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import {glob} from "glob";

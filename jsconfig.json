@@ -1,13 +1,13 @@
 {
   "compilerOptions": {
-    "module": "esnext",
     "checkJs": true,
     "target": "es2017",
     "baseUrl": "./",
     "paths": {
       "@/*": ["./src/*"]
     },
-    "moduleResolution": "nodenext"
+    "moduleResolution": "NodeNext",
+    "module": "NodeNext"
   },
   "exclude": ["node_modules", "dist"]
 }
