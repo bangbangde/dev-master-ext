@@ -1,54 +1,46 @@
-import { generateUUID } from "@/utils/uuid";
+import { generateUUID } from '@/utils/uuid'
 
 /**
  * 自动重连
- * @param {string} name 
+ * @param {string} name
  * @param {(message: any, port: chrome.runtime.Port) => void} [onMessage]
  */
 export const useConnect = (name, onMessage) => {
-  let port;
-  let shouldRreconnect;
-  const listeners = [];
+  let port
 
-  (function connect() {
-    port = chrome.runtime.connect(null, { name });
-    onMessage && port.onMessage.addListener(onMessage);
-    listeners.forEach(fn => port.onMessage.addListener(fn));
-    port.onDisconnect.addListener(function() {
-      console.log("{${name}} Disconnected");
-      shouldRreconnect && connect();
-    });
-    shouldRreconnect = true;
-    console.log(shouldRreconnect ? `${name} Connected` : `${name} Reconnected`);
-  })();
+  function onDisconnect() {
+    if (!chrome.runtime.lastError) {
+      connect()
+    }
+  }
 
+  function connect() {
+    port = chrome.runtime.connect(null, { name })
+    if (chrome.runtime.lastError) {
+      throw chrome.runtime.lastError
+    } else {
+      port.onMessage.addListener(onMessage)
+      port.onDisconnect.addListener(onDisconnect)
+    }
+  }
+
+  connect()
   return {
-    addListener: (fn) => {
-      listeners.push(fn);
-      port.onMessage.addListener(fn);
-    },
-    /**
-     * postMessage
-     * @param {string} type 
-     * @param {any} payload
-     */
     postMessage: (type, payload) => {
+      const id = generateUUID()
       port.postMessage({
         type,
-        id: generateUUID(),
+        id,
         payload
-      });
-    },
-    disconneect: () => {
-      shouldRreconnect = false;
-      port.disconneect();
+      })
+      return id
     },
     get port() {
-      return port;
+      return port
     }
   }
 }
 
 export default {
   useConnect
-};
+}
