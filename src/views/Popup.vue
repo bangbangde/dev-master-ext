@@ -4,16 +4,17 @@
       <h2>WebDev Master</h2>
     </header>
 
-    <a
-      href="https://developer.chrome.com/docs/extensions/reference/api"
-      target="_blank"
-    >
-      extensions api
-    </a>
+    <a href="index.html" target="_blank">Home</a>
 
     <footer>
       @ 2023 Frank - <a href="options.html" target="_blank">扩展程序选项</a> -
       <a href="https://github.com/bangbangde" target="_blank">Github</a>
+      <a
+        href="https://developer.chrome.com/docs/extensions/reference/api"
+        target="_blank"
+      >
+        extensions api
+      </a>
     </footer>
   </div>
 </template>

@@ -1,51 +1,35 @@
 <template>
   <div class="side-panel">
-    <p>{{ info }}</p>
+    <div class="chat-gpt">
+      <p v-if="!chatBotStatus.ready">{{ chatBotStatus.value }}</p>
+      <div v-else class="section-chat">
+        <textarea class="chat-input" rows="1"></textarea>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
-import { useConnect } from '@/modules/connect'
-import { CONNECT_NAME, MESSAGE_TYPE } from '@/modules/consts'
+import { getChatBot } from '@/modules/chatBot'
+
 export default {
   name: 'side-panel',
   data: () => ({
-    info: '',
-    templates: [
-      { name: 'chat', label: '聊天' },
-      { name: 'translate', label: '翻译' }
-    ]
+    chatBotStatus: { ready: false, value: '' }
   }),
-  created() {
-    this.responding = {}
-    this.onMessage = this.onMessage.bind(this)
-    this.connect = useConnect(
-      CONNECT_NAME.SIDE_PANEL__SERVICE_WORKER,
-      this.onMessage
-    )
+  mounted() {
+    this.chatBot = getChatBot((status) => {
+      this.chatBotStatus = status
+    })
+    this.chatBotStatus = this.chatBot.status
   },
-  methods: {
-    handleResponse(payload) {
-      if (payload.end === true) {
-        this.responding = null
-      }
-    },
-    postMessage(type, payload, onMessage) {
-      const id = this.connect.postMessage(type, payload)
-      if (onMessage) {
-        this.responding[id] = onMessage
-      }
-    },
-    onMessage(message, port) {
-      const { type, payload } = message
-      if (type === MESSAGE_TYPE.RESPONSE) {
-        const { id, data } = payload
-        if (!this.responding.hasOwnProperty(id)) return
-        this.this.responding[id](payload)
-      }
-    }
-  }
+  methods: {}
 }
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.chat-input {
+  resize: none;
+  width: 100%;
+}
+</style>

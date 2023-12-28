@@ -1,117 +1,136 @@
-// @ts-nocheck
-const instances = new Set();
-let chatBotStatus = useStorage(STORAGE_KEY.CHAT_BOT_STATUS);
+import * as Api from './chetGPTWebApis'
+import { STORAGE_KEY } from '@/modules/consts'
 
-export class ChatBot {
-  static botRegistry = {
-    COMMON: {
-      title: 'BOT_通用助手',
-      initialPrompt: '请你扮演一个web开发助手'
+let conversationId = null
+let currentNode = null
+let messageMapping = null
+let readyPromise
+let responding = false
+let pendingChatList = []
+let status = { ready: false, value: '' }
+const statusListeners = new Set()
+const initialPrompt =
+  'I want you to act as a ChatGPT prompt generator, I will send a topic, you have to generate a ChatGPT prompt based on the content of the topic, the prompt should start with "I want you to act as ", and guess what I might do, and expand the prompt accordingly Describe the content to make it useful.Let\'s continue in Chinese.'
+
+function setStatus(value) {
+  status = { value, ready: value === '初始化完成' }
+  statusListeners.forEach((cb) => cb(status))
+}
+
+async function initConversation(title = '[EXT] DO NOT DELETE') {
+  try {
+    setStatus('正在初始化token')
+    const token = (
+      await chrome.storage.local.get(STORAGE_KEY.CHAT_GPT_WEB_TOKEN)
+    )?.[STORAGE_KEY.CHAT_GPT_WEB_TOKEN]
+
+    if (!token) {
+      setStatus('错误：token未设置')
+      throw new Error('Failed to retrieve Authorization.')
     }
-  };
 
-  bot = null;
-  conversationId = null;
-  currentNode = null;
-  messageMapping = null;
-  ready;
-  responding = false;
-  pendingChatList = [];
+    Api.setToken(token)
+    setStatus('token设置成功')
 
-  constructor(bot) {
-    this.bot = bot || ChatBot.botRegistry.COMMON;
-    this.update();
+    setStatus('正在查询会话列表')
+    const conversations = await Api.queryConversations().then((res) =>
+      res.json()
+    )
+    const foundConv = conversations.items.find((v) => v.title === title)
+
+    if (foundConv) {
+      conversationId = foundConv.id
+      setStatus('正在恢复会话')
+    } else {
+      setStatus('正在创建新会话')
+      const res = await Api.postMessage(initialPrompt)
+      conversationId = res.data[res.data.length - 1].conversation_id
+      setStatus('正在设置会话标题')
+      await Api.renameConversation(conversationId, title)
+    }
+
+    setStatus('正在读取会话信息')
+    const convDetail = await Api.queryConversation(conversationId).then((res) =>
+      res.json()
+    )
+    currentNode = convDetail['current_node']
+    messageMapping = convDetail['mapping']
+    setStatus('初始化完成')
+  } catch (e) {
+    setStatus(`初始化失败`)
+    console.error(e)
+  }
+}
+
+const chat = async (msg, onMessage) => {
+  await readyPromise
+
+  const post = (reject, resolve) => {
+    return Api.postMessage(msg, onMessage, conversationId, currentNode)
+      .then((res) => {
+        const lastNode = res.data[res.data.length - 1]
+        currentNode = lastNode['message_id'] || lastNode.message.id
+        resolve && resolve(res)
+        return res
+      })
+      .catch((err) => {
+        if (reject) {
+          reject(err)
+        } else {
+          throw err
+        }
+      })
+      .finally(() => {
+        if (pendingChatList?.length) {
+          pendingChatList.shift()()
+        } else {
+          responding = false
+        }
+      })
   }
 
-  get messageList() {
-    if (!this.currentNode || !this.messageMapping) return null;
-
-    const list = [];
-    const mapping = this.messageMapping;
-
-    (function unshiftMsg(id) {
-      const target = mapping[id];
-      list.unshift(target);
-      if (target.parent) {
-        unshiftMsg(target.parent)
-      }
-    })(this.currentNode);
-    
-    return list;
-  }
-
-  async update() {
-    this.ready = this.initConversation();
-    this.ready.then(() => {
-      chatBotStatus.then(v => {
-        v.set({ready: true});
-      })
-    }).catch(err => {
-      chatBotStatus.then(v => {
-        v.set({ready: false, detail: err.message });
-      })
+  if (responding) {
+    return new Promise((resolve, reject) => {
+      pendingChatList.push(post.bind(null, resolve, reject))
     })
   }
 
-  async initConversation() {
-    const conversations = await queryConversations().then(res => res.json());
-    const foundConv = conversations.items.find(v => v.title === this.bot.title);
+  responding = true
+  return post()
+}
 
-    if (foundConv) {
-      this.conversationId = foundConv.id;
-    } else {
-      const res = await postMessage(this.bot.initialPrompt);
-      this.conversationId = res.data[res.data.length - 1].conversation_id;
-      await renameConversation(this.conversationId, this.bot.title);
-    }
-
-    const convDetail = await queryConversation(this.conversationId).then(res => res.json());
-    this.currentNode = convDetail['current_node'];
-    this.messageMapping = convDetail['mapping'];
-    return this;
+export const getChatBot = (statusListener) => {
+  if (statusListener) {
+    statusListeners.add(statusListener)
   }
-  
-  /**
-   * 发送消息
-   * - 按调用顺序依次发送
-   * @param {*} msg 
-   * @param {*} onMessage 
-   * @returns 
-   */
-  async chat(msg, onMessage) {
-    await this.ready;
+  if (readyPromise === undefined) {
+    readyPromise = initConversation()
+  }
+  return {
+    chat,
+    get status() {
+      return status
+    },
+    get messages() {
+      if (!currentNode || !messageMapping) return null
 
-    const post = (reject, resolve) => {
-      return postMessage(msg, onMessage, this.conversationId, this.currentNode)
-        .then((res) => {
-          const lastNode = res.data[res.data.length - 1];
-          this.currentNode = lastNode['message_id'] || lastNode.message.id;
-          resolve && resolve(res);
-          return res;
-        })
-        .catch(err => {
-          if (reject) {
-            reject(err);
-          } else {
-            throw err;
-          }
-        })
-        .finally(() => {
-          if (this.pendingChatList?.length) {
-            this.pendingChatList.shift()();
-          } else {
-            this.responding = false;
-          }
-        });
-    }
+      const list = []
 
-    if (this.responding) {
-      return new Promise((resolve, reject) => {
-        this.pendingChatList.push(post.bind(this, resolve, reject));
-      });
+      ;(function unshiftMsg(id) {
+        const target = messageMapping[id]
+        list.unshift(target)
+        if (target.parent) {
+          unshiftMsg(target.parent)
+        }
+      })(currentNode)
+
+      return list
     }
-    
-    this.responding = true;
-    return post();
   }
 }
+
+chrome.storage.local.onChanged.addListener((items) => {
+  if (items[STORAGE_KEY.CHAT_GPT_WEB_TOKEN]) {
+    Api.setToken(items[STORAGE_KEY.CHAT_GPT_WEB_TOKEN].newValue)
+  }
+})

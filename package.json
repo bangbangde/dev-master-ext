@@ -31,7 +31,9 @@
     "vitest": "^1.0.4"
   },
   "dependencies": {
+    "@material/web": "^1.1.1",
     "deepmerge": "^4.3.1",
+    "monaco-editor": "^0.45.0",
     "vue": "^3.3.11",
     "vue-router": "^4.2.5"
   }
