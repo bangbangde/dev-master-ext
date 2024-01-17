@@ -1,6 +1,7 @@
 import { createApp, ref } from 'vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
 import App from '@/views/App.vue'
+import '@/styles/base.scss'
 
 const router = createRouter({
   history: createWebHashHistory(import.meta.env.BASE_URL),
@@ -14,6 +15,11 @@ const router = createRouter({
       path: '/storage',
       name: 'storage',
       component: () => import('@/views/StorageViewer.vue')
+    },
+    {
+      path: '/chatTabs',
+      name: 'chatTabs',
+      component: () => import('@/views/components/ChatTabs.vue')
     }
   ]
 })

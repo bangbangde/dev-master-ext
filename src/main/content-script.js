@@ -1,78 +1,58 @@
-const options = {}
+function debounce(fn, wait = 800, immediate = false) {
+  let timer = null
+  let lastArgs = null
+  let lastThis = null
 
-const logger = {
-  log: (...args) => options?.['allowLogger'] && console.log(...args)
-}
-
-chrome.storage.local.get('OPTIONS').then((items) => {
-  Object.assign(options, items['OPTIONS'])
-})
-chrome.storage.local.onChanged.addListener((changes, area) => {
-  logger.log('storage.local.onChanged', changes, area)
-  if (changes['OPTIONS']) {
-    Object.assign(options, changes['OPTIONS'].newValue)
+  function invokeFn() {
+    fn.apply(lastThis, lastArgs)
   }
-})
 
-function createScript({ type = 'module', src, code, append = true }) {
-  const script = document.createElement('script')
-  script.type = type
-  if (src) {
-    script.src = src
-  } else {
-    script.innerHTML = code
+  function startTimer(executed) {
+    timer = setTimeout(() => {
+      timer = null
+      if (!executed) {
+        invokeFn()
+      }
+    }, wait)
   }
-  append && document.body.append(script)
-  return script
-}
 
-const connect = (function useConnect(onMessage) {
-  let port
-  let connected = false
+  return function (...args) {
+    lastArgs = args
+    lastThis = this
 
-  function connect() {
-    port = chrome.runtime.connect()
-    logger.log('ext connect', { lastError: chrome.runtime.lastError })
-    if (chrome.runtime.lastError) {
-      throw chrome.runtime.lastError
+    if (timer) {
+      clearTimeout(timer)
+      startTimer(false)
+      return
+    }
+
+    if (immediate) {
+      invokeFn()
+      startTimer(true)
     } else {
-      port.onMessage.addListener(onMessage)
-      port.onDisconnect.addListener(onDisconnect)
-      connected = true
+      startTimer(false)
     }
   }
-  function onDisconnect() {
-    logger.log('ext onDisconnect', { lastError: chrome.runtime.lastError })
-    connected = false
-    if (!chrome.runtime.lastError) {
-      connect()
-    }
-  }
+}
 
-  connect()
+function addSelectionChangeListener(callback, wait = 800) {
+  const handler = debounce(
+    (ev) => {
+      callback(window.getSelection())
+    },
+    wait,
+    true
+  )
 
-  return {
-    get port() {
-      return port
-    },
-    get disconnected() {
-      return connected
-    },
-    postMessage(type, payload) {
-      if (!connected) {
-        connect()
-      }
-      try {
-        port.postMessage({ type, payload })
-      } catch (e) {
-        connect()
-        port.postMessage({ type, payload })
-      }
-    }
+  document.addEventListener('selectionchange', handler)
+  return () => {
+    document.removeEventListener('selectionchange', handler)
   }
-})((message, port) => {
-  logger.log('ext onMessage', message)
-  if (message.type === 'INJECT_SCRIPT_TO_HOST') {
-    createScript(message.payload)
-  }
+}
+
+addSelectionChangeListener(async (selection) => {
+  await chrome.runtime.sendMessage({
+    type: 'CONTENT_SCRIPT_SELECTION_TEXT',
+    payload: selection.toString()
+  })
 })

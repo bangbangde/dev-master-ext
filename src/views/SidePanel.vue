@@ -1,35 +1,65 @@
 <template>
   <div class="side-panel">
-    <div class="chat-gpt">
-      <p v-if="!chatBotStatus.ready">{{ chatBotStatus.value }}</p>
-      <div v-else class="section-chat">
-        <textarea class="chat-input" rows="1"></textarea>
+    <router-view></router-view>
+    <div class="fab">
+      <div class="fab-container">
+        <button @click="reload">RELOAD</button>
+        <button @click="open">OPEN IN TAB</button>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { getChatBot } from '@/modules/chatBot'
-
 export default {
   name: 'side-panel',
   data: () => ({
-    chatBotStatus: { ready: false, value: '' }
+    url: chrome.runtime.getURL('side-panel.html')
   }),
-  mounted() {
-    this.chatBot = getChatBot((status) => {
-      this.chatBotStatus = status
-    })
-    this.chatBotStatus = this.chatBot.status
-  },
-  methods: {}
+  methods: {
+    reload() {
+      console.log(location)
+      location.reload()
+    },
+    open() {
+      window.open(chrome.runtime.getURL('pages/side-panel.html'))
+    }
+  }
 }
 </script>
-
 <style lang="scss" scoped>
-.chat-input {
-  resize: none;
-  width: 100%;
+.side-panel {
+  height: 100vh;
+  padding: 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+
+  .fab {
+    position: fixed;
+    right: -16px;
+    bottom: 16px;
+    width: 32px;
+    height: 32px;
+    border-radius: 100%;
+    background-color: darkorange;
+    overflow: visible;
+
+    .fab-container {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      display: none;
+      padding-bottom: 32px;
+      padding-right: 32px;
+    }
+
+    &:hover {
+      right: 0px;
+      .fab-container {
+        display: block;
+      }
+    }
+  }
 }
 </style>

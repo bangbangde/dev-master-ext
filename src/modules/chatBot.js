@@ -3,21 +3,22 @@ import { STORAGE_KEY } from '@/modules/consts'
 
 let conversationId = null
 let currentNode = null
+let rootNode = null
 let messageMapping = null
 let readyPromise
 let responding = false
-let pendingChatList = []
 let status = { ready: false, value: '' }
 const statusListeners = new Set()
-const initialPrompt =
-  'I want you to act as a ChatGPT prompt generator, I will send a topic, you have to generate a ChatGPT prompt based on the content of the topic, the prompt should start with "I want you to act as ", and guess what I might do, and expand the prompt accordingly Describe the content to make it useful.Let\'s continue in Chinese.'
+const pendingChatList = []
+const title = '[EXT] DO NOT DELETE'
+const initialPrompt = "Let's continue in Chinese."
 
 function setStatus(value) {
   status = { value, ready: value === '初始化完成' }
   statusListeners.forEach((cb) => cb(status))
 }
 
-async function initConversation(title = '[EXT] DO NOT DELETE') {
+async function initConversation() {
   try {
     setStatus('正在初始化token')
     const token = (
@@ -43,7 +44,7 @@ async function initConversation(title = '[EXT] DO NOT DELETE') {
       setStatus('正在恢复会话')
     } else {
       setStatus('正在创建新会话')
-      const res = await Api.postMessage(initialPrompt)
+      const res = await Api.postMessage(Api.buildMessage(initialPrompt))
       conversationId = res.data[res.data.length - 1].conversation_id
       setStatus('正在设置会话标题')
       await Api.renameConversation(conversationId, title)
@@ -55,6 +56,7 @@ async function initConversation(title = '[EXT] DO NOT DELETE') {
     )
     currentNode = convDetail['current_node']
     messageMapping = convDetail['mapping']
+
     setStatus('初始化完成')
   } catch (e) {
     setStatus(`初始化失败`)
@@ -62,14 +64,48 @@ async function initConversation(title = '[EXT] DO NOT DELETE') {
   }
 }
 
-const chat = async (msg, onMessage) => {
+const chat = async (msg, options = {}) => {
+  const { onMessage, onSend } = options
   await readyPromise
 
   const post = (reject, resolve) => {
-    return Api.postMessage(msg, onMessage, conversationId, currentNode)
+    const msgObj = Api.buildMessage(msg, conversationId, currentNode)
+    const id = msgObj.messages[0].id
+
+    messageMapping[id] = {
+      id,
+      message: msgObj.messages[0],
+      parent: currentNode
+    }
+
+    const parentNode = messageMapping[currentNode]
+
+    if (parentNode.children) {
+      parentNode.children.push(id)
+      parentNode.activeNode = id
+    } else {
+      messageMapping[currentNode].children = [id]
+    }
+
+    onSend && onSend(messageMapping[id])
+
+    let node
+
+    return Api.postMessage(msgObj, (msg, data) => {
+      if (!node) {
+        node = messageMapping[data.message.id] = {
+          id: data.message.id,
+          message: data.message,
+          parent: id
+        }
+        messageMapping[id].children = [data.message.id]
+        currentNode = node.id
+      } else {
+        node.message = data.message
+      }
+      onMessage(node)
+    })
       .then((res) => {
-        const lastNode = res.data[res.data.length - 1]
-        currentNode = lastNode['message_id'] || lastNode.message.id
         resolve && resolve(res)
         return res
       })
@@ -99,33 +135,59 @@ const chat = async (msg, onMessage) => {
   return post()
 }
 
-export const getChatBot = (statusListener) => {
-  if (statusListener) {
-    statusListeners.add(statusListener)
+function setCurrentNode(id) {
+  currentNode = id?.id || id
+}
+
+function switchMessage(id) {
+  function getLastNode(node) {
+    if (node?.children?.length) {
+      return getLastNode(
+        messageMapping[node?.children[node?.children.length - 1]]
+      )
+    }
+    return node
+  }
+
+  const lastNode = getLastNode(messageMapping[id])
+  setCurrentNode(lastNode)
+}
+
+function getMessageList() {
+  const list = []
+  function walk(node) {
+    list.unshift(node)
+    if (!node.parent) return
+
+    const parent = messageMapping[node.parent]
+    parent.activeNode = node.id
+    walk(parent)
+  }
+  walk(messageMapping[currentNode])
+
+  return list
+}
+
+export const getChatBot = (options = {}) => {
+  const { onStatusChange } = options
+  if (onStatusChange) {
+    statusListeners.add(onStatusChange)
+    onStatusChange(status)
   }
   if (readyPromise === undefined) {
     readyPromise = initConversation()
   }
   return {
     chat,
+    get messageMapping() {
+      return messageMapping
+    },
     get status() {
       return status
     },
-    get messages() {
-      if (!currentNode || !messageMapping) return null
-
-      const list = []
-
-      ;(function unshiftMsg(id) {
-        const target = messageMapping[id]
-        list.unshift(target)
-        if (target.parent) {
-          unshiftMsg(target.parent)
-        }
-      })(currentNode)
-
-      return list
-    }
+    setCurrentNode,
+    switchMessage,
+    getMessageList
   }
 }
 

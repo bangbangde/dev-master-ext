@@ -4,7 +4,9 @@
       <h2>WebDev Master</h2>
     </header>
 
-    <a href="index.html" target="_blank">Home</a>
+    <a href="index.html" target="_blank">Home</a> <br />
+    <a href="index.html#/storage" target="_blank">Storage</a> <br />
+    <a href="javascript:void(0);" @click="openSidePanel">Side Panel</a>
 
     <footer>
       @ 2023 Frank - <a href="options.html" target="_blank">扩展程序选项</a> -
@@ -21,7 +23,16 @@
 
 <script>
 export default {
-  name: 'page-popup'
+  name: 'page-popup',
+  methods: {
+    async openSidePanel(ev) {
+      ev.preventDefault()
+      const tabs = await chrome.tabs.query({ active: true })
+      await chrome.sidePanel.open({
+        tabId: tabs[0].id
+      })
+    }
+  }
 }
 </script>
 

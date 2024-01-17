@@ -4,19 +4,13 @@
       <div class="row">
         <md-outlined-text-field
           label="ChatGPT token"
-          :value="formData.chatGPTToken"
-          @input="formData.chatGPTToken = $event.target.value"
+          :value="formData[STORAGE_KEY.CHAT_GPT_WEB_TOKEN]"
+          @input="
+            formData[STORAGE_KEY.CHAT_GPT_WEB_TOKEN] = $event.target.value
+          "
         ></md-outlined-text-field>
       </div>
-      <div class="row">
-        <label class="switch-label">
-          打印日志
-          <md-switch
-            :selected="formData.allowLogger"
-            @change="formData.allowLogger = $event.target.selected"
-          ></md-switch>
-        </label>
-      </div>
+
       <div class="row buttons">
         <md-outlined-button type="submit">Submit</md-outlined-button>
       </div>
@@ -36,26 +30,26 @@ import { STORAGE_KEY } from '@/modules/consts'
 export default {
   name: 'Options',
   data: () => ({
+    STORAGE_KEY,
     formData: {
-      allowLogger: false,
-      chatGPTToken: null
+      [STORAGE_KEY.CHAT_GPT_WEB_TOKEN]: null
     }
   }),
   mounted() {
-    chrome.storage.local.get(STORAGE_KEY.OPTIONS).then((items) => {
-      console.log({ items })
-      if (items[STORAGE_KEY.OPTIONS]) {
-        Object.assign(this.formData, items[STORAGE_KEY.OPTIONS])
-      }
+    const keys = Object.keys(this.formData)
+    chrome.storage.local.get(keys).then((items) => {
+      keys.forEach((key) => {
+        if (key in items) {
+          this.formData[key] = items[key]
+        }
+      })
     })
   },
   methods: {
     handleSubmit(ev) {
       event.preventDefault()
       chrome.storage.local
-        .set({
-          [STORAGE_KEY.OPTIONS]: this.formData
-        })
+        .set({ ...this.formData })
         .then(() => {
           console.log('success')
         })

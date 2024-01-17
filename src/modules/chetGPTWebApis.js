@@ -61,52 +61,49 @@ export const renameConversation = (id, title) => {
   })
 }
 
-/**
- *
- * @param {string} message
- * @param {function} [cb]
- * @param {string} [conversationId]
- * @param {string} [parentMessageId]
- * @returns
- */
-export const postMessage = async (
-  message,
-  cb,
-  conversationId,
-  parentMessageId
-) => {
+export const buildMessage = (message, conversationId, parentMessageId) => {
   if (parentMessageId == null) {
     parentMessageId = generateUUID()
   }
+  return {
+    action: 'next',
+    messages: [
+      {
+        id: generateUUID(),
+        author: { role: 'user' },
+        content: {
+          content_type: 'text',
+          parts: [message]
+        },
+        metadata: {}
+      }
+    ],
+    conversation_id: conversationId,
+    parent_message_id: parentMessageId,
+    model: 'text-davinci-002-render-sha',
+    timezone_offset_min: -480,
+    suggestions: [],
+    history_and_training_disabled: false,
+    arkose_token: null,
+    conversation_mode: { kind: 'primary_assistant' },
+    force_paragen: false,
+    force_rate_limit: false
+  }
+}
+
+/**
+ *
+ * @param {object} msg
+ * @param {function} [cb]
+ * @returns
+ */
+export const postMessage = async (msg, cb) => {
   return request(`conversation`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({
-      action: 'next',
-      messages: [
-        {
-          id: generateUUID(),
-          author: { role: 'user' },
-          content: {
-            content_type: 'text',
-            parts: [message]
-          },
-          metadata: {}
-        }
-      ],
-      conversation_id: conversationId,
-      parent_message_id: parentMessageId,
-      model: 'text-davinci-002-render-sha',
-      timezone_offset_min: -480,
-      suggestions: [],
-      history_and_training_disabled: false,
-      arkose_token: null,
-      conversation_mode: { kind: 'primary_assistant' },
-      force_paragen: false,
-      force_rate_limit: false
-    })
+    body: JSON.stringify(msg)
   }).then(async (response) => {
     const reader = response.body.getReader()
     let data = []
@@ -136,7 +133,6 @@ export const postMessage = async (
     }
     await reader.read().then(processText)
 
-    console.log('conveersation done', { message, data })
     return {
       data,
       message
